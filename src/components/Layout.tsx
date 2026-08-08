@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { NavBar } from '@/components/NavBar';
 import { Footer } from '@/components/Footer';
+import { BackgroundField } from '@/components/BackgroundField';
 
 export function Layout() {
   const { pathname } = useLocation();
@@ -11,12 +12,15 @@ export function Layout() {
   }, [pathname]);
 
   return (
-    <div className="min-h-screen bg-void">
-      <NavBar />
-      <main>
-        <Outlet />
-      </main>
-      <Footer />
+    <div className="min-h-screen">
+      <BackgroundField />
+      <div className="relative z-10">
+        <NavBar />
+        <main>
+          <Outlet />
+        </main>
+        <Footer />
+      </div>
     </div>
   );
 }
