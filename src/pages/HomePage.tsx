@@ -262,7 +262,8 @@ export function HomePage() {
 
       const images: (HTMLImageElement | null)[] = new Array(BG_TOTAL_FRAMES + 1).fill(null);
       const loaded: boolean[] = new Array(BG_TOTAL_FRAMES + 1).fill(false);
-      for (let i = 1; i <= BG_TOTAL_FRAMES; i++) {
+      const loadFrame = (i: number) => {
+        if (images[i]) return;
         const img = new Image();
         img.decoding = 'async';
         img.src = bgFrameSrc(i);
@@ -270,7 +271,23 @@ export function HomePage() {
           loaded[i] = true;
         };
         images[i] = img;
-      }
+      };
+      // Load the first screenful now; stream the rest in during idle time so
+      // 145 requests don't all land on the main thread/network at once.
+      for (let i = 1; i <= Math.min(12, BG_TOTAL_FRAMES); i++) loadFrame(i);
+      let streamNext = 13;
+      const idle: (cb: () => void) => number =
+        (window as unknown as { requestIdleCallback?: typeof requestIdleCallback }).requestIdleCallback ||
+        ((cb: () => void) => window.setTimeout(cb, 120));
+      const streamRest = () => {
+        if (disposed || streamNext > BG_TOTAL_FRAMES) return;
+        const end = Math.min(streamNext + 4, BG_TOTAL_FRAMES);
+        for (let i = streamNext; i <= end; i++) loadFrame(i);
+        streamNext = end + 1;
+        idle(streamRest);
+      };
+      idle(streamRest);
+
       const nearestLoadedFrame = (target: number) => {
         const t = Math.round(target);
         for (let d = 0; d <= BG_TOTAL_FRAMES; d++) {
@@ -289,7 +306,7 @@ export function HomePage() {
          buffer at their native aspect, then feather the edges with a
          radial mask so the rectangle blends into the page. */
       const AR = 480 / 848;
-      const bufW = 1200;
+      const bufW = 640;
       const bufH = Math.round(bufW * AR);
       const buffer = document.createElement('canvas');
       buffer.width = bufW;
@@ -309,7 +326,9 @@ export function HomePage() {
       const resize = () => {
         width = innerWidth;
         height = innerHeight;
-        const dpr = Math.min(devicePixelRatio || 1, 2);
+        // this layer is soft-edged and low-alpha, so full retina density
+        // buys nothing visible — cap it to keep the pixel count down.
+        const dpr = Math.min(devicePixelRatio || 1, 1.5);
         cv!.width = width * dpr;
         cv!.height = height * dpr;
         cv!.style.width = width + 'px';
@@ -317,7 +336,12 @@ export function HomePage() {
         ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
       };
       resize();
-      on(window, 'resize', resize, { passive: true });
+      let rrt: number;
+      const onResize = () => {
+        clearTimeout(rrt);
+        rrt = window.setTimeout(resize, 150);
+      };
+      on(window, 'resize', onResize, { passive: true });
 
       const getMaxScroll = () =>
         Math.max(1, document.documentElement.scrollHeight - innerHeight);
@@ -352,11 +376,9 @@ export function HomePage() {
 
         const w = Math.min(1100, Math.max(480, width * 0.78));
         const h = w * AR;
-        ctx!.filter = 'blur(1px)';
         ctx!.globalAlpha = 0.42;
         ctx!.drawImage(buffer, (width - w) / 2, (height - h) / 2, w, h);
         ctx!.globalAlpha = 1;
-        ctx!.filter = 'none';
       };
 
       if (reduce) {
@@ -555,7 +577,10 @@ export function HomePage() {
       let raf = 0;
 
       function resize() {
-        const DPR = Math.min(devicePixelRatio || 1, 2);
+        // hundreds of tiny particles redraw every frame forever, not just
+        // while scrolling, so this canvas's pixel count matters a lot more
+        // than a one-shot layer's; cap it below full retina density.
+        const DPR = Math.min(devicePixelRatio || 1, 1.5);
         W = innerWidth;
         H = innerHeight;
         cv!.width = W * DPR;
@@ -579,12 +604,15 @@ export function HomePage() {
           });
       }
 
-      /* the flier is the primary attractor; the monogram takes over when it's centred */
+      /* the flier is the primary attractor; the monogram takes over when it's centred.
+         The candidate elements are static once mounted, so the query runs once
+         here rather than on every animation frame. */
+      const anchorEls = Array.from(document.querySelectorAll<HTMLElement>('[data-dust-anchor]'));
       function anchor() {
         const L = Logo.get();
         let best = { x: L.x, y: L.y, w: Math.min(L.w, 430), pull: 1 };
         let bestP = 0;
-        document.querySelectorAll<HTMLElement>('[data-dust-anchor]').forEach((m) => {
+        anchorEls.forEach((m) => {
           const r = m.getBoundingClientRect();
           if (r.bottom <= 0 || r.top >= H) return;
           const cy = r.top + r.height / 2;
@@ -648,12 +676,12 @@ export function HomePage() {
           const alpha = (0.14 + p.z * 0.5) * (p.hot ? 1.5 : 1);
           const size = 1.4 * p.z * (p.hot ? 1.7 : 1);
           if (streak > 1.3) {
-            ctx!.strokeStyle = 'rgba(203,176,120,' + (alpha * 0.8).toFixed(3) + ')';
-            ctx!.lineWidth = size;
-            ctx!.beginPath();
-            ctx!.moveTo(x, yy);
-            ctx!.lineTo(x, yy + (vel > 0 ? -streak * p.z : streak * p.z));
-            ctx!.stroke();
+            // A thin filled rect reads identically to a capped line at this
+            // size but skips path construction + stroking, which is what
+            // made fast scrolling (streak active on ~every particle) heavy.
+            const len = vel > 0 ? -streak * p.z : streak * p.z;
+            ctx!.fillStyle = 'rgba(203,176,120,' + (alpha * 0.8).toFixed(3) + ')';
+            ctx!.fillRect(x - size / 2, len < 0 ? yy + len : yy, size, Math.abs(len));
           } else {
             ctx!.fillStyle = p.hot
               ? 'rgba(240,224,189,' + alpha.toFixed(3) + ')'

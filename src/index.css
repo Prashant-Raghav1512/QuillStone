@@ -29,7 +29,7 @@ main,nav,footer{position:relative;z-index:3}
 .flier img{display:block;width:100%;height:auto;position:relative;z-index:2}
 .aura{position:absolute;inset:-46%;z-index:0;border-radius:50%;
   background:conic-gradient(from 0deg,transparent 0deg,rgba(203,176,120,.22) 40deg,transparent 110deg,transparent 190deg,rgba(90,176,166,.13) 230deg,transparent 300deg,rgba(212,122,99,.12) 330deg,transparent 360deg);
-  filter:blur(34px);animation:aura 34s linear infinite;
+  filter:blur(20px);animation:aura 34s linear infinite;
   -webkit-mask:radial-gradient(closest-side,#000 34%,transparent 76%);mask:radial-gradient(closest-side,#000 34%,transparent 76%)}
 .ring{position:absolute;inset:-18%;z-index:1;border-radius:50%;border:1px solid rgba(203,176,120,.16);animation:breathe 7s ease-in-out infinite}
 .ring.two{inset:-30%;border-color:rgba(203,176,120,.08);animation-duration:11s;animation-direction:reverse}
@@ -49,7 +49,7 @@ main,nav,footer{position:relative;z-index:3}
 /* ---------- NAV ---------- */
 nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;
   padding:1.2rem 2rem;transition:background .4s,padding .4s,border-color .4s;border-bottom:1px solid transparent}
-nav.scrolled{background:rgba(11,10,9,.82);backdrop-filter:blur(14px);padding:.7rem 2rem;border-bottom:1px solid var(--line)}
+nav.scrolled{background:rgba(9,8,7,.96);padding:.7rem 2rem;border-bottom:1px solid var(--line)}
 .brand{display:flex;align-items:center;gap:.85rem;text-decoration:none;color:var(--ink)}
 .brand .nav-mono{height:58px;width:auto;display:block;flex:none;transition:height .4s;filter:drop-shadow(0 0 12px rgba(203,176,120,.25))}
 nav.scrolled .brand .nav-mono{height:46px}
