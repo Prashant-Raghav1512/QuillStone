@@ -1,6 +1,11 @@
 import { neon } from '@neondatabase/serverless';
 
-const INTERESTS = new Set(['Publishing', 'Marketing', 'General']);
+const INTERESTS = new Set([
+  'Publishing a manuscript',
+  'Brand & marketing work',
+  'Both / not sure yet',
+  'Something else',
+]);
 
 export type QueryBody = {
   name?: unknown;

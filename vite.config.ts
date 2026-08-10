@@ -46,8 +46,5 @@ export default defineConfig(({ mode, command }) => {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
       },
     },
-    optimizeDeps: {
-      exclude: ['lucide-react'],
-    },
   };
 });
