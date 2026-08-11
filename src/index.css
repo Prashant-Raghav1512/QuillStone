@@ -23,7 +23,8 @@ body::before{content:"";position:fixed;inset:0;z-index:40;pointer-events:none;op
 main,nav,footer{position:relative;z-index:3}
 
 /* ---------- THE TRAVELLING LOGO ---------- */
-.stage{position:fixed;inset:0;z-index:0;pointer-events:none}
+.stage{position:fixed;inset:0;z-index:0;pointer-events:none;display:none}
+.stage.active{display:block}
 .flier{position:absolute;left:0;top:0;transform-origin:50% 50%;will-change:transform}
 .flier-in{position:relative;display:block;will-change:opacity,filter}
 .flier img{display:block;width:100%;height:auto;position:relative;z-index:2}
@@ -57,6 +58,7 @@ nav.scrolled .brand .nav-mono{height:46px}
 .nav-links a{color:var(--muted);text-decoration:none;font-size:.92rem;position:relative;transition:color .3s}
 .nav-links a::after{content:"";position:absolute;left:0;bottom:-6px;height:1px;width:100%;background:var(--gold);transform:scaleX(0);transform-origin:left;transition:transform .35s cubic-bezier(.2,.7,.2,1)}
 .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{transform:scaleX(1)}
+.nav-links a.active{color:var(--ink)}.nav-links a.active::after{transform:scaleX(1)}
 .pill{font-size:.9rem;font-weight:500;cursor:pointer;padding:.7rem 1.5rem;border-radius:100px;text-decoration:none;
   background:var(--gold);color:#1c160c;border:1px solid var(--gold);transition:transform .3s,box-shadow .3s}
 .pill:hover{transform:translateY(-2px);box-shadow:0 10px 24px -12px rgba(203,176,120,.7)}
@@ -87,6 +89,12 @@ nav.scrolled .brand .nav-mono{height:46px}
 .scroll-cue{position:absolute;left:50%;bottom:1.6rem;transform:translateX(-50%);font-size:.68rem;letter-spacing:.3em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;align-items:center;gap:.6rem}
 .scroll-cue .bar{width:1px;height:34px;background:linear-gradient(var(--gold),transparent);animation:drop 2.2s ease-in-out infinite}
 @keyframes drop{0%,100%{opacity:.3;transform:scaleY(.6);transform-origin:top}50%{opacity:1;transform:scaleY(1);transform-origin:top}}
+
+/* first section on any page that isn't preceded by the tall hero needs
+   its own clearance under the fixed nav. The "body" ancestor selector is
+   just there to out-specificity each section's own padding shorthand
+   regardless of source order. */
+body .page-head{padding-top:9rem}
 
 /* ---------- PATHS ---------- */
 .paths{padding:5rem 0 1rem}
