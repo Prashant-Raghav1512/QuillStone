@@ -617,7 +617,11 @@ export function Layout() {
           <div className="foot-top">
             <div className="foot-brand">
               <img className="foot-logo" data-dust-anchor src={LOGO} alt="Quillstones" />
-              <p>A dual-discipline house. Narratives that endure. Brands that lead.</p>
+              <p>
+                Our mission is to help every author publish a book they’re proud of — and put it in
+                readers’ hands around the world.
+              </p>
+              <p className="initiative">Quillstones is an initiative of Phyra International.</p>
               <a className="email" href="mailto:hello@quillstones.com">
                 hello@quillstones.com
               </a>

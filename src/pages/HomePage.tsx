@@ -1,18 +1,23 @@
+import { useEffect, type MouseEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { LOGO } from '@/lib/assets';
 import { useRevealAndCounters } from '@/lib/useRevealAndCounters';
+import { PublishingProcess } from '@/components/PublishingProcess';
+import { PublishingPackages } from '@/components/PublishingPackages';
+import { FeaturedReleases } from '@/components/FeaturedReleases';
 
-const BODY_HTML = `
+const HERO_HTML = `
 <!-- HERO -->
 <header class="hero">
   <div class="wrap">
     <div class="logo-space" id="logoSpace"></div>
     <div class="hero-copy" id="heroCopy">
-      <div class="kicker reveal">Publishing House × Media Marketing</div>
-      <h1 class="hero-tag reveal">Narratives that <span class="c-teal">endure.</span><br>Brands that <span class="c-coral">lead.</span></h1>
-      <p class="hero-sub reveal">A dual-discipline house. We edit and publish literary work, and we build brands with the same editorial discipline — two crafts, held to one standard.</p>
+      <div class="kicker reveal">Self-Publishing for Authors</div>
+      <h1 class="hero-tag reveal">Your story, <span class="c-teal">published.</span><br>Your book, <span class="c-coral">worldwide.</span></h1>
+      <p class="hero-sub reveal">From editing and cover design to ISBNs and distribution on Amazon KDP, IngramSpark and Draft2Digital, we take your manuscript to readers around the world.</p>
       <div class="hero-cta reveal">
-        <a href="#/what-we-do?scroll=publishing" class="pill teal">I have a manuscript</a>
-        <a href="#/what-we-do?scroll=marketing" class="pill coral">I need brand help</a>
+        <a href="#/contact" class="pill teal">Submit Manuscript</a>
+        <a href="#/?scroll=packages" data-scroll-to="packages" class="pill ghost">View Publishing Packages</a>
         <a href="#/contact" class="plainlink">or just say hello →</a>
       </div>
       <div class="hero-trust reveal"><span class="dot"></span>Working with authors and founders since 2016.</div>
@@ -20,7 +25,9 @@ const BODY_HTML = `
   </div>
   <div class="scroll-cue"><span>Scroll</span><span class="bar"></span></div>
 </header>
+`;
 
+const REST_HTML = `
 <!-- MONOGRAM INTERLUDE -->
 <section class="interlude">
   <div class="wrap reveal">
@@ -44,7 +51,37 @@ const BODY_HTML = `
 </section>
 `;
 
+function scrollToSection(id: string) {
+  const el = document.getElementById(id);
+  if (el) requestAnimationFrame(() => el.scrollIntoView({ block: 'start' }));
+}
+
 export function HomePage() {
   useRevealAndCounters();
-  return <div dangerouslySetInnerHTML={{ __html: BODY_HTML }} />;
+  const [params] = useSearchParams();
+
+  // deep links like `#/?scroll=packages`
+  useEffect(() => {
+    const target = params.get('scroll');
+    if (target) scrollToSection(target);
+  }, [params]);
+
+  // hero buttons that point at a section on this page scroll there directly,
+  // so they keep working when clicked a second time (the URL wouldn't change)
+  const onHeroClick = (e: MouseEvent<HTMLDivElement>) => {
+    const link = (e.target as HTMLElement).closest<HTMLElement>('[data-scroll-to]');
+    if (!link) return;
+    e.preventDefault();
+    scrollToSection(link.dataset.scrollTo!);
+  };
+
+  return (
+    <>
+      <div onClick={onHeroClick} dangerouslySetInnerHTML={{ __html: HERO_HTML }} />
+      <PublishingProcess />
+      <PublishingPackages />
+      <FeaturedReleases />
+      <div dangerouslySetInnerHTML={{ __html: REST_HTML }} />
+    </>
+  );
 }
