@@ -1,10 +1,14 @@
 import { useEffect, type MouseEvent } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { LOGO } from '@/lib/assets';
 import { useRevealAndCounters } from '@/lib/useRevealAndCounters';
 import { PublishingProcess } from '@/components/PublishingProcess';
 import { PublishingPackages } from '@/components/PublishingPackages';
+import { RoyaltyCalculator } from '@/components/RoyaltyCalculator';
 import { FeaturedReleases } from '@/components/FeaturedReleases';
+import { AuthorStories } from '@/components/AuthorStories';
+import { AuthorFAQ } from '@/components/AuthorFAQ';
+import { ManuscriptSubmission } from '@/components/ManuscriptSubmission';
 
 const HERO_HTML = `
 <!-- HERO -->
@@ -16,7 +20,7 @@ const HERO_HTML = `
       <h1 class="hero-tag reveal">Your story, <span class="c-teal">published.</span><br>Your book, <span class="c-coral">worldwide.</span></h1>
       <p class="hero-sub reveal">From editing and cover design to ISBNs and distribution on Amazon KDP, IngramSpark and Draft2Digital, we take your manuscript to readers around the world.</p>
       <div class="hero-cta reveal">
-        <a href="#/contact" class="pill teal">Submit Manuscript</a>
+        <a href="#/?scroll=submit" data-scroll-to="submit" class="pill teal">Submit Manuscript</a>
         <a href="#/?scroll=packages" data-scroll-to="packages" class="pill ghost">View Publishing Packages</a>
         <a href="#/contact" class="plainlink">or just say hello →</a>
       </div>
@@ -58,13 +62,14 @@ function scrollToSection(id: string) {
 
 export function HomePage() {
   useRevealAndCounters();
-  const [params] = useSearchParams();
+  const location = useLocation();
 
-  // deep links like `#/?scroll=packages`
+  // in-page links like `#/?scroll=packages`. `location.key` changes on every
+  // navigation, so following the same link a second time scrolls again.
   useEffect(() => {
-    const target = params.get('scroll');
+    const target = new URLSearchParams(location.search).get('scroll');
     if (target) scrollToSection(target);
-  }, [params]);
+  }, [location.key, location.search]);
 
   // hero buttons that point at a section on this page scroll there directly,
   // so they keep working when clicked a second time (the URL wouldn't change)
@@ -80,8 +85,12 @@ export function HomePage() {
       <div onClick={onHeroClick} dangerouslySetInnerHTML={{ __html: HERO_HTML }} />
       <PublishingProcess />
       <PublishingPackages />
+      <RoyaltyCalculator />
       <FeaturedReleases />
+      <AuthorStories />
       <div dangerouslySetInnerHTML={{ __html: REST_HTML }} />
+      <AuthorFAQ />
+      <ManuscriptSubmission />
     </>
   );
 }
