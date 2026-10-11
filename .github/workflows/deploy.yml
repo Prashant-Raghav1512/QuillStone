@@ -23,8 +23,14 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
+      # Reads the Pages settings: base_path is "/QuillStone" on the github.io
+      # address and "" once a custom domain (quillstones.com) is set, so the
+      # build follows whichever address the site is served from.
+      - id: pages
+        uses: actions/configure-pages@v5
       - run: npm run build
         env:
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}/
           # public build-time settings, set as repository variables (see .env.example)
           VITE_FORM_ENDPOINT: ${{ vars.VITE_FORM_ENDPOINT }}
           VITE_FORM_ACCESS_KEY: ${{ vars.VITE_FORM_ACCESS_KEY }}
