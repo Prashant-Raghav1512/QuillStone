@@ -1,37 +1,34 @@
-interface Story {
-  quote: string;
-  author: string;
-  /** title of the author's book, shown in italics after their name */
-  book?: string;
-}
+import { TESTIMONIALS } from '@/data/testimonials';
 
-// Add real author quotes here, with the author's permission. Until there is at
-// least one entry the whole section stays hidden, so the page never shows
-// invented testimonials.
-const STORIES: Story[] = [];
-
-/** Author testimonials, reusing the site's existing quote-card styling. */
+/**
+ * Testimonials from data/testimonials.ts, reusing the site's quote-card
+ * styling. Renders nothing until there is at least one real entry.
+ */
 export function AuthorStories() {
-  if (STORIES.length === 0) return null;
+  if (TESTIMONIALS.length === 0) return null;
 
   return (
     <section className="proof" id="stories">
       <div className="wrap">
         <div className="eyebrow reveal">Author stories</div>
         <div className="quotes">
-          {STORIES.map((story) => (
-            <div className="qcard reveal" key={story.author + story.quote}>
-              <p>“{story.quote}”</p>
-              <div className="who">
-                <b>{story.author}</b>
-                {story.book && (
+          {TESTIMONIALS.map((t) => (
+            <figure className="qcard reveal" key={t.name + t.quote}>
+              <blockquote>
+                <p>“{t.quote}”</p>
+              </blockquote>
+              <figcaption className="who">
+                <b>{t.name}</b>
+                {(t.role || t.work) && (
                   <>
                     {' '}
-                    — author, <em>{story.book}</em>
+                    — {t.role}
+                    {t.role && t.work && ', '}
+                    {t.work && <em>{t.work}</em>}
                   </>
                 )}
-              </div>
-            </div>
+              </figcaption>
+            </figure>
           ))}
         </div>
       </div>

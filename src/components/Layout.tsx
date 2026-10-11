@@ -1,6 +1,25 @@
-import { useEffect, useRef } from 'react';
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { BASE, LOGO, BG_TOTAL_FRAMES, bgFrameSrc } from '@/lib/assets';
+import { useEffect, useRef, useState } from 'react';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { LOGO, BG_TOTAL_FRAMES, bgFrameSrc } from '@/lib/assets';
+import { trackPageview } from '@/lib/analytics';
+import { SITE, hasWhatsApp, whatsappHref } from '@/config/site';
+import { ContactLinks } from '@/components/ContactLinks';
+import { QuoteForm } from '@/components/QuoteForm';
+import { CookieNotice } from '@/components/CookieNotice';
+
+const NAV_ITEMS = [
+  { to: '/', label: 'Home', end: true },
+  { to: '/what-we-do', label: 'What we do' },
+  { to: '/our-work', label: 'Our work' },
+  { to: '/how-it-works', label: 'How it works' },
+  { to: '/contact', label: 'Contact' },
+];
+
+const navClass = ({ isActive }: { isActive: boolean }) => (isActive ? 'active' : undefined);
+
+/** Everything keyboard-focusable inside `root`, in DOM order. */
+const focusablesIn = (root: HTMLElement) =>
+  Array.from(root.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input, select, textarea'));
 
 /* ============================================================
    TUNING — everything you'd want to change lives here
@@ -46,10 +65,13 @@ const on = (
  */
 export function Layout() {
   const location = useLocation();
-  const navigate = useNavigate();
   const isHome = location.pathname === '/';
   const logoStateRef = useRef<LogoState>({ x: 0, y: 0, w: 0, pull: 0 });
   const anchorRefreshRef = useRef<() => void>(() => {});
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
 
   /* ---------- background + dust + nav scroll class: set up once ---------- */
   useEffect(() => {
@@ -77,8 +99,8 @@ export function Layout() {
       };
       // Load the first screenful now; stream the rest in during idle time so
       // 145 requests don't all land on the main thread/network at once.
-      for (let i = 1; i <= Math.min(12, BG_TOTAL_FRAMES); i++) loadFrame(i);
-      let streamNext = 13;
+      if (!reduce) for (let i = 1; i <= Math.min(12, BG_TOTAL_FRAMES); i++) loadFrame(i);
+      let streamNext = reduce ? BG_TOTAL_FRAMES + 1 : 13;
       const idle: (cb: () => void) => number =
         (window as unknown as { requestIdleCallback?: typeof requestIdleCallback }).requestIdleCallback ||
         ((cb: () => void) => window.setTimeout(cb, 120));
@@ -185,6 +207,8 @@ export function Layout() {
       };
 
       if (reduce) {
+        // only the final frame is ever shown, so load just that one
+        loadFrame(BG_TOTAL_FRAMES);
         const img = images[BG_TOTAL_FRAMES]!;
         const draw = () => drawFrame(BG_TOTAL_FRAMES);
         if (img.complete) draw();
@@ -475,7 +499,7 @@ export function Layout() {
 
       let cx = lerp(hx, wx, t);
       let cy = lerp(hy, wy, t);
-      let w = lerp(base, markW, t);
+      const w = lerp(base, markW, t);
 
       /* a little parallax while it's still the hero */
       if (!reduce) {
@@ -559,7 +583,76 @@ export function Layout() {
   useEffect(() => {
     anchorRefreshRef.current();
     if (!location.search.includes('scroll=')) window.scrollTo(0, 0);
+    trackPageview();
   }, [location.pathname, location.search]);
+
+  /* ---------- mobile menu (below 900px) ---------- */
+  const menuOpenRef = useRef(false);
+  const focusMainOnCloseRef = useRef(false);
+
+  // close on every navigation, including a link to the page you're already on,
+  // and hand focus to the new page rather than leaving it on a hidden link
+  // (done in the menu effect's cleanup, once <main> is no longer inert)
+  useEffect(() => {
+    if (!menuOpenRef.current) return;
+    focusMainOnCloseRef.current = true;
+    setMenuOpen(false);
+  }, [location.key]);
+
+  useEffect(() => {
+    const menu = menuRef.current;
+    const btn = menuBtnRef.current;
+    const main = mainRef.current;
+    if (!menuOpen || !menu || !btn) return;
+    menuOpenRef.current = true;
+
+    // lock page scroll and make everything behind the menu inert
+    const root = document.documentElement;
+    root.classList.add('menu-open');
+    const behind = Array.from(
+      document.querySelectorAll<HTMLElement>('main, footer, .wa-float, .cookie-notice'),
+    );
+    behind.forEach((el) => el.setAttribute('inert', ''));
+    focusablesIn(menu)[0]?.focus();
+
+    // keep Tab cycling between the toggle button and the menu's own links
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setMenuOpen(false);
+        btn.focus();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const items = [btn, ...focusablesIn(menu)];
+      const i = items.indexOf(document.activeElement as HTMLElement);
+      const last = items.length - 1;
+      if (i === -1 || (e.shiftKey && i === 0) || (!e.shiftKey && i === last)) {
+        e.preventDefault();
+        items[e.shiftKey ? last : 0].focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+
+    // the menu only exists on narrow screens; widening the window closes it
+    const wide = matchMedia('(min-width: 901px)');
+    const onWide = () => {
+      if (wide.matches) setMenuOpen(false);
+    };
+    wide.addEventListener('change', onWide);
+
+    return () => {
+      menuOpenRef.current = false;
+      root.classList.remove('menu-open');
+      behind.forEach((el) => el.removeAttribute('inert'));
+      if (focusMainOnCloseRef.current) {
+        focusMainOnCloseRef.current = false;
+        main?.focus({ preventScroll: true });
+      }
+      document.removeEventListener('keydown', onKey);
+      wide.removeEventListener('change', onWide);
+    };
+  }, [menuOpen]);
 
   return (
     <>
@@ -579,36 +672,61 @@ export function Layout() {
         </div>
       </div>
 
-      <nav id="nav">
+      <nav id="nav" aria-label="Main">
         <Link className="brand" to="/">
           <img className="nav-mono" src={LOGO} alt="Quillstones" />
         </Link>
         <div className="nav-links">
-          <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : undefined)}>
-            Home
-          </NavLink>
-          <NavLink to="/what-we-do" className={({ isActive }) => (isActive ? 'active' : undefined)}>
-            What we do
-          </NavLink>
-          <NavLink to="/our-work" className={({ isActive }) => (isActive ? 'active' : undefined)}>
-            Our work
-          </NavLink>
-          <NavLink to="/how-it-works" className={({ isActive }) => (isActive ? 'active' : undefined)}>
-            How it works
-          </NavLink>
-          <NavLink to="/contact" className={({ isActive }) => (isActive ? 'active' : undefined)}>
-            Contact
-          </NavLink>
+          {NAV_ITEMS.map((item) => (
+            <NavLink key={item.to} to={item.to} end={item.end} className={navClass}>
+              {item.label}
+            </NavLink>
+          ))}
         </div>
-        <Link to="/contact" className="pill">
-          Get in touch
-        </Link>
-        <button className="menu-btn" aria-label="Go to contact" onClick={() => navigate('/contact')}>
-          ☰
-        </button>
+        <div className="nav-actions">
+          <ContactLinks className="nav-contact" />
+          <Link to="/contact" className="pill">
+            Get in touch
+          </Link>
+          <button
+            ref={menuBtnRef}
+            type="button"
+            className={'menu-btn' + (menuOpen ? ' is-open' : '')}
+            aria-label="Menu"
+            aria-expanded={menuOpen}
+            aria-controls="site-menu"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            <span className="menu-icon" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        {/* narrow screens only (see .mobile-menu in index.css) */}
+        <div
+          id="site-menu"
+          ref={menuRef}
+          className={'mobile-menu' + (menuOpen ? ' is-open' : '')}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Site menu"
+        >
+          <ul className="mobile-menu-links">
+            {NAV_ITEMS.map((item) => (
+              <li key={item.to}>
+                <NavLink to={item.to} end={item.end} className={navClass}>
+                  {item.label}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+          <Link to="/contact" className="pill mobile-menu-cta">
+            Get in touch
+          </Link>
+          <ContactLinks className="mobile-menu-contact" withEmail />
+        </div>
       </nav>
 
-      <main>
+      <main id="main" ref={mainRef} tabIndex={-1}>
         <Outlet />
       </main>
 
@@ -622,16 +740,48 @@ export function Layout() {
                 readers’ hands around the world.
               </p>
               <p className="initiative">Quillstones is an initiative of Phyra International.</p>
-              <a className="email" href="mailto:hello@quillstones.com">
-                hello@quillstones.com
+              <a className="email" href={`mailto:${SITE.email}`}>
+                {SITE.email}
               </a>
+              <ContactLinks className="foot-contact" />
+              {SITE.address.length > 0 && (
+                <address className="foot-address">
+                  {SITE.address.map((line) => (
+                    <span key={line}>{line}</span>
+                  ))}
+                </address>
+              )}
+              {SITE.social.length > 0 && (
+                <ul className="foot-social">
+                  {SITE.social.map((s) => (
+                    <li key={s.url}>
+                      <a href={s.url} target="_blank" rel="noopener noreferrer">
+                        {s.label}
+                        <span className="visually-hidden"> (opens in a new tab)</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-            <div className="foot-links">
-              <Link to="/">Home</Link>
-              <Link to="/what-we-do">What we do</Link>
-              <Link to="/our-work">Our work</Link>
-              <Link to="/how-it-works">How it works</Link>
-              <Link to="/contact">Contact</Link>
+            <nav className="foot-links" aria-label="Footer">
+              {NAV_ITEMS.map((item) => (
+                <Link key={item.to} to={item.to}>
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+            <div className="foot-quote">
+              <QuoteForm
+                placement="footer"
+                layout="stacked"
+                title={
+                  <>
+                    Ready to <em>publish?</em>
+                  </>
+                }
+                intro="Get a free, no-obligation quote."
+              />
             </div>
           </div>
           <div className="foot-bottom">
@@ -640,6 +790,31 @@ export function Layout() {
           </div>
         </div>
       </footer>
+
+      {hasWhatsApp && (
+        <a
+          className="wa-float"
+          href={whatsappHref()}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-cta="WhatsApp button"
+          aria-label="Chat with us on WhatsApp (opens in a new tab)"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path
+              className="wa-bubble"
+              d="M12 2.6a9.4 9.4 0 0 0-8.1 14.2L2.6 21.4l4.7-1.2A9.4 9.4 0 1 0 12 2.6z"
+            />
+            <path
+              className="wa-phone"
+              transform="translate(6.6 6.6) scale(.45)"
+              d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"
+            />
+          </svg>
+        </a>
+      )}
+
+      <CookieNotice />
     </>
   );
 }

@@ -1,6 +1,9 @@
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
+import { initAnalytics } from './lib/analytics';
 import './index.css';
+
+initAnalytics();
 
 // Note: intentionally not wrapped in <StrictMode>. The page below drives a
 // canvas particle field and a scroll-linked logo with plain imperative DOM

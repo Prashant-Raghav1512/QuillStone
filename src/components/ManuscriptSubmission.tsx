@@ -1,15 +1,10 @@
-import {
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  type ChangeEvent,
-  type FormEvent,
-  type ReactNode,
-} from 'react';
+import { useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { NOT_SURE, PACKAGE_CHOICES } from '@/lib/packages';
-import { sendEnquiry } from '@/lib/sendEnquiry';
+import { readHoneypot, sendEnquiry } from '@/lib/sendEnquiry';
+import { SITE } from '@/config/site';
+import { ContactLinks } from '@/components/ContactLinks';
+import { FieldShell, Honeypot, SendFailed, SuccessPanel } from '@/components/FormParts';
 
 const GENRES = [
   'Literary fiction',
@@ -120,35 +115,6 @@ function composeMessage(v: Values) {
   return lines.join('\n');
 }
 
-interface FieldShellProps {
-  id: string;
-  label: string;
-  hint?: string;
-  error?: string;
-  children: ReactNode;
-}
-
-/** A label, its control, and either the validation error or the hint under it. */
-function FieldShell({ id, label, hint, error, children }: FieldShellProps) {
-  return (
-    <div>
-      <label htmlFor={id}>{label}</label>
-      {children}
-      {error ? (
-        <p className="field-error" id={`${id}-note`}>
-          {error}
-        </p>
-      ) : (
-        hint && (
-          <p className="field-hint" id={`${id}-note`}>
-            {hint}
-          </p>
-        )
-      )}
-    </div>
-  );
-}
-
 /**
  * Manuscript submission: the page's closing call to action.
  *
@@ -164,7 +130,8 @@ export function ManuscriptSubmission() {
   const formRef = useRef<HTMLFormElement>(null);
   const [values, setValues] = useState<Values>(EMPTY);
   const [errors, setErrors] = useState<Errors>({});
-  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'email'>('idle');
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
+  const [mailto, setMailto] = useState('');
 
   // "Choose Premium" on the pricing grid links here with ?package=Premium
   const [params] = useSearchParams();
@@ -194,7 +161,7 @@ export function ManuscriptSubmission() {
     },
   });
 
-  const onSubmit = async (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const found = validate(values);
     setErrors(found);
@@ -206,21 +173,24 @@ export function ManuscriptSubmission() {
 
     setStatus('sending');
     const result = await sendEnquiry({
+      source: 'manuscript',
       name: values.name.trim(),
       email: values.email.trim(),
       interest: 'Publishing a manuscript',
       message: composeMessage(values),
+      honeypot: readHoneypot(e.currentTarget),
     });
-    if (result === 'sent') setValues(EMPTY);
-    setStatus(result === 'sent' ? 'sent' : 'email');
+    if (result.status === 'sent') {
+      setValues(EMPTY);
+      setStatus('sent');
+    } else {
+      setMailto(result.mailto);
+      setStatus('failed');
+    }
   };
 
   const hasErrors = Object.values(errors).some(Boolean);
-  let note = '';
-  if (hasErrors) note = 'Please check the highlighted fields.';
-  else if (status === 'email') {
-    note = 'Your email app should open with everything filled in. Press send there to complete your submission.';
-  }
+  const note = hasErrors ? 'Please check the highlighted fields.' : '';
 
   return (
     <section className="contact submission" id="submit">
@@ -246,23 +216,26 @@ export function ManuscriptSubmission() {
               ))}
             </ol>
             <p className="direct">
-              Prefer email? <a href="mailto:hello@quillstones.com">hello@quillstones.com</a>
+              Prefer email? <a href={`mailto:${SITE.email}`}>{SITE.email}</a>
             </p>
+            <ContactLinks className="direct-links" />
           </div>
 
           <div className="reveal">
             {status === 'sent' ? (
-              <div className="submission-done" role="status">
-                <div className="submission-done-mark" aria-hidden="true"></div>
-                <h3 className="serif">Thank you. It’s with us.</h3>
-                <p>
-                  Every submission is read by a person. You’ll hear back within a week with an
-                  honest read, a rough timeline and a quote.
-                </p>
-                <button type="button" className="submit" onClick={() => setStatus('idle')}>
-                  Submit another manuscript
-                </button>
-              </div>
+              <SuccessPanel
+                title="Thank you. It’s with us."
+                actionLabel="Submit another manuscript"
+                onReset={() => {
+                  setStatus('idle');
+                  requestAnimationFrame(() =>
+                    (formRef.current?.elements.namedItem('name') as HTMLElement | null)?.focus(),
+                  );
+                }}
+              >
+                Every submission is read by a person. You’ll hear back within a week with an honest
+                read, a rough timeline and a quote.
+              </SuccessPanel>
             ) : (
               <form ref={formRef} onSubmit={onSubmit} noValidate>
                 <div className="row">
@@ -374,12 +347,14 @@ export function ManuscriptSubmission() {
                   )}
                 </div>
 
+                <Honeypot />
                 <button className="submit" type="submit" disabled={status === 'sending'}>
                   {status === 'sending' ? 'Sending…' : 'Submit manuscript'}
                 </button>
                 <p className="formnote" role="status">
                   {note}
                 </p>
+                {status === 'failed' && <SendFailed mailto={mailto} />}
               </form>
             )}
           </div>

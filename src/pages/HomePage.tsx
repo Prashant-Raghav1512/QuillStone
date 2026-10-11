@@ -1,6 +1,7 @@
 import { useEffect, type MouseEvent } from 'react';
 import { useLocation } from 'react-router-dom';
 import { LOGO } from '@/lib/assets';
+import { SITE } from '@/config/site';
 import { useRevealAndCounters } from '@/lib/useRevealAndCounters';
 import { PublishingProcess } from '@/components/PublishingProcess';
 import { PublishingPackages } from '@/components/PublishingPackages';
@@ -9,6 +10,13 @@ import { FeaturedReleases } from '@/components/FeaturedReleases';
 import { AuthorStories } from '@/components/AuthorStories';
 import { AuthorFAQ } from '@/components/AuthorFAQ';
 import { ManuscriptSubmission } from '@/components/ManuscriptSubmission';
+import { QuoteForm } from '@/components/QuoteForm';
+import { Stats } from '@/components/Stats';
+
+// the "since …" line only appears once config/site.ts has a real founding year
+const TRUST_HTML = SITE.foundedYear
+  ? `<div class="hero-trust reveal"><span class="dot"></span>Working with authors since ${SITE.foundedYear}.</div>`
+  : '';
 
 const HERO_HTML = `
 <!-- HERO -->
@@ -24,33 +32,20 @@ const HERO_HTML = `
         <a href="#/?scroll=packages" data-scroll-to="packages" class="pill ghost">View Publishing Packages</a>
         <a href="#/contact" class="plainlink">or just say hello →</a>
       </div>
-      <div class="hero-trust reveal"><span class="dot"></span>Working with authors and founders since 2016.</div>
+      ${TRUST_HTML}
     </div>
   </div>
   <div class="scroll-cue"><span>Scroll</span><span class="bar"></span></div>
 </header>
 `;
 
-const REST_HTML = `
+const INTERLUDE_HTML = `
 <!-- MONOGRAM INTERLUDE -->
 <section class="interlude">
   <div class="wrap reveal">
     <img class="mono" data-dust-anchor src="${LOGO}" alt="">
     <blockquote>A quill for the <span>word.</span> A stone for the <span>weight</span> it carries.</blockquote>
     <div class="attrib">The mark, explained</div>
-  </div>
-</section>
-
-<!-- STATS -->
-<section class="stats">
-  <div class="wrap">
-    <div class="stats-head reveal"><span class="eyebrow">By the numbers</span><p>A decade of building things meant to last.</p></div>
-    <div class="stat-row">
-      <div class="stat reveal"><div class="num serif" data-count="40" data-suffix="+">40+</div><div class="lbl">Titles in print</div></div>
-      <div class="stat reveal"><div class="num serif" data-count="17">17</div><div class="lbl">Languages licensed</div></div>
-      <div class="stat reveal"><div class="num serif" data-count="60" data-suffix="+">60+</div><div class="lbl">Campaigns delivered</div></div>
-      <div class="stat reveal"><div class="num serif" data-count="12">12</div><div class="lbl">Design awards</div></div>
-    </div>
   </div>
 </section>
 `;
@@ -83,12 +78,26 @@ export function HomePage() {
   return (
     <>
       <div onClick={onHeroClick} dangerouslySetInnerHTML={{ __html: HERO_HTML }} />
+      <section className="quote-band" id="quote">
+        <div className="wrap reveal">
+          <QuoteForm
+            placement="home"
+            title={
+              <>
+                Get a <em>free quote.</em>
+              </>
+            }
+            intro="Tell us who you are and what you need. We’ll reply with a quote, with no obligation."
+          />
+        </div>
+      </section>
       <PublishingProcess />
       <PublishingPackages />
       <RoyaltyCalculator />
       <FeaturedReleases />
       <AuthorStories />
-      <div dangerouslySetInnerHTML={{ __html: REST_HTML }} />
+      <div dangerouslySetInnerHTML={{ __html: INTERLUDE_HTML }} />
+      <Stats />
       <AuthorFAQ />
       <ManuscriptSubmission />
     </>

@@ -24,6 +24,12 @@ jobs:
           node-version: 20
       - run: npm ci
       - run: npm run build
+        env:
+          # public build-time settings, set as repository variables (see .env.example)
+          VITE_FORM_ENDPOINT: ${{ vars.VITE_FORM_ENDPOINT }}
+          VITE_FORM_ACCESS_KEY: ${{ vars.VITE_FORM_ACCESS_KEY }}
+          VITE_ANALYTICS_ID: ${{ vars.VITE_ANALYTICS_ID }}
+          VITE_ANALYTICS_SRC: ${{ vars.VITE_ANALYTICS_SRC }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

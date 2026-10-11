@@ -1,20 +1,21 @@
 export interface PublishingPackage {
   name: string;
   tagline: string;
-  price: string;
+  /** in the currency set in config/site.ts, e.g. 24999. Shows "Price on request" when omitted. */
+  price?: number;
   /** shown above the feature list, e.g. "Everything in Essential, plus:" */
   includes?: string;
   features: string[];
   popular?: boolean;
 }
 
-// PLACEHOLDER content: the prices below are illustrative only. Replace them
-// (and the currency) with the real figures before relying on them.
+// TODO(real data): add each package's real price as a number (e.g. price: 24999)
+// and set SITE.currency in config/site.ts. Until both are set, the cards show
+// "Price on request" instead of a figure.
 export const PACKAGES: PublishingPackage[] = [
   {
     name: 'Essential',
     tagline: 'For manuscripts that are nearly there.',
-    price: '$299',
     includes: 'What’s included:',
     features: [
       'Proofreading',
@@ -27,7 +28,6 @@ export const PACKAGES: PublishingPackage[] = [
   {
     name: 'Premium',
     tagline: 'The complete path from draft to print.',
-    price: '$599',
     popular: true,
     includes: 'Everything in Essential, plus:',
     features: [
@@ -41,7 +41,6 @@ export const PACKAGES: PublishingPackage[] = [
   {
     name: 'Elite',
     tagline: 'Full-service publishing, start to finish.',
-    price: '$1,199',
     includes: 'Everything in Premium, plus:',
     features: [
       'Developmental editing',

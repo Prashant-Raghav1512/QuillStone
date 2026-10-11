@@ -35,11 +35,14 @@ function apiDevMiddleware(databaseUrl: string | undefined): Plugin {
 }
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode, command }) => {
+export default defineConfig(({ mode, command, isPreview }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
     // GitHub Pages serves this project from /QuillStone/, not the domain root.
-    base: command === 'build' ? '/QuillStone/' : '/',
+    // Set BASE_PATH=/ when building for a host that serves it from the root
+    // (Vercel, Cloudflare Pages, or a custom domain). `vite preview` serves
+    // the built files, so it needs the same base as the build.
+    base: command === 'build' || isPreview ? env.BASE_PATH || '/QuillStone/' : '/',
     plugins: [react(), apiDevMiddleware(env.DATABASE_URL)],
     resolve: {
       alias: {

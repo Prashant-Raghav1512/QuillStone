@@ -1,27 +1,55 @@
 import { neon } from '@neondatabase/serverless';
 
-const INTERESTS = new Set([
-  'Publishing a manuscript',
-  'Brand & marketing work',
-  'Both / not sure yet',
-  'Something else',
-]);
+/**
+ * Stores an enquiry from any of the site's forms (contact, manuscript
+ * submission, free quote) in the Neon `queries` table (db/schema.sql).
+ *
+ * Runtime-agnostic: called by the `vite dev` middleware (vite.config.ts), the
+ * Vercel function (api/queries.ts) and the Cloudflare Pages Function
+ * (functions/api/queries.ts), via server/http.ts.
+ */
 
-export type QueryBody = {
-  name?: unknown;
-  email?: unknown;
-  interest?: unknown;
-  message?: unknown;
-};
+const SOURCES = new Set(['contact', 'manuscript', 'quote']);
+
+/** Must match HONEYPOT in src/lib/sendEnquiry.ts. */
+const HONEYPOT = 'website_url';
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export type QueryBody = Record<string, unknown>;
+
+/** A trimmed, non-empty string no longer than `max`, or null. */
+const required = (v: unknown, max: number) =>
+  typeof v === 'string' && v.trim() && v.length <= max ? v.trim() : null;
+
+/** '' when absent, the trimmed string when valid, or null when invalid. */
+const optional = (v: unknown, max: number) =>
+  v === undefined || v === null || v === '' ? '' : required(v, max);
 
 export async function handleQuery(body: QueryBody, databaseUrl: string | undefined) {
-  const { name, email, interest, message } = body;
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return { status: 400, json: { error: 'Missing or invalid fields' } };
+  }
+
+  // a bot filled the hidden field: report success and store nothing
+  const trap = body[HONEYPOT];
+  if (typeof trap === 'string' && trap.trim()) {
+    return { status: 201, json: { ok: true } };
+  }
+
+  const name = required(body.name, 200);
+  const interest = required(body.interest, 200);
+  const message = required(body.message, 5000);
+  const email = optional(body.email, 320);
+  const phone = optional(body.phone, 40);
+  const role = optional(body.role, 60);
+  const source = typeof body.source === 'string' && SOURCES.has(body.source) ? body.source : 'contact';
 
   if (
-    typeof name !== 'string' || !name.trim() ||
-    typeof email !== 'string' || !email.trim() ||
-    typeof message !== 'string' || !message.trim() ||
-    typeof interest !== 'string' || !INTERESTS.has(interest)
+    !name || !interest || !message ||
+    email === null || phone === null || role === null ||
+    (!email && !phone) ||
+    (email && !EMAIL.test(email))
   ) {
     return { status: 400, json: { error: 'Missing or invalid fields' } };
   }
@@ -33,8 +61,8 @@ export async function handleQuery(body: QueryBody, databaseUrl: string | undefin
   try {
     const sql = neon(databaseUrl);
     await sql`
-      INSERT INTO queries (name, email, interest, message)
-      VALUES (${name.trim()}, ${email.trim()}, ${interest}, ${message.trim()})
+      INSERT INTO queries (name, email, phone, role, source, interest, message)
+      VALUES (${name}, ${email || null}, ${phone || null}, ${role || null}, ${source}, ${interest}, ${message})
     `;
     return { status: 201, json: { ok: true } };
   } catch (err) {
