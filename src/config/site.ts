@@ -14,36 +14,33 @@ export interface SocialLink {
 export const SITE = {
   name: 'Quillstones',
 
-  /** Already published on the site. Make sure this inbox is monitored. */
-  email: 'hello@quillstones.com',
+  email: 'contact@quillstones.com',
 
-  // TODO(real data): phone number in international format, e.g. '+44 20 7946 0000'.
-  // Shown in the header, footer and mobile menu once set.
-  phone: '',
+  /** Shown in the header, footer and mobile menu, in international format. */
+  phone: '+91 96268 96540',
 
-  // TODO(real data): WhatsApp number, digits only with the country code and no
-  // '+', spaces or leading zeros, e.g. '447700900000'. Turns on the floating
-  // WhatsApp button and the WhatsApp links in the header and footer.
-  whatsapp: '',
+  // The same number on WhatsApp: digits only, with the country code and no
+  // '+' or spaces. Turns on the floating WhatsApp button and the WhatsApp links.
+  whatsapp: '919626896540',
 
   /** Pre-filled text when a visitor opens WhatsApp from the site. */
   whatsappMessage: 'Hi Quillstones, I’d like to know more about publishing my book.',
 
-  // TODO(real data): postal address, one line per entry. Shown in the footer once set.
+  // No public postal address. Add lines here (one per entry) to show one in the footer.
   address: [] as string[],
 
   // TODO(real data): social profiles, e.g. { label: 'Instagram', url: 'https://instagram.com/…' }.
   social: [] as SocialLink[],
 
-  // TODO(real data): ISO 4217 code for package prices, e.g. 'INR', 'USD' or 'GBP'.
-  // Package prices stay hidden until both this and the prices in lib/packages.ts are set.
-  currency: '',
+  /** ISO 4217 code used for package prices, once lib/packages.ts has any. */
+  currency: 'INR',
 
-  // TODO(real data): shown under package prices, e.g. 'Prices include GST.'
+  // Shown under package prices, e.g. 'Prices include GST.' Unused while the
+  // packages have no prices.
   taxNote: '',
 
-  // TODO(real data): the year Quillstones started working with authors. The
-  // "since …" line under the hero stays hidden until it is set.
+  // Quillstones has only just started, so there is no "working with authors
+  // since …" line under the hero. Set a year here to show one later.
   foundedYear: null as number | null,
 };
 

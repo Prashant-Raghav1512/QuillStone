@@ -13,7 +13,6 @@ export interface Book {
 }
 
 // TODO(real data): add books Quillstones has actually published, with their
-// real synopsis, cover and buy link (for example The Last Leftist Historian,
-// once those are final). Our work lists every entry; home shows the ones
-// marked `featured`. Both sections stay hidden while this list is empty.
+// real synopsis, cover and buy link. Our work lists every entry; home shows
+// the ones marked `featured`. Both sections stay hidden while this list is empty.
 export const BOOKS: Book[] = [];

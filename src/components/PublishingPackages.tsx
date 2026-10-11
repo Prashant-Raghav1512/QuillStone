@@ -6,8 +6,8 @@ import { QuoteForm } from '@/components/QuoteForm';
 /**
  * Three-tier pricing grid. The middle (popular) tier is highlighted, and each
  * "Choose" button jumps to the submission form with that package preselected.
- * Prices come from lib/packages.ts in the currency set in config/site.ts, and
- * read "Price on request" until both are filled in.
+ * Packages have no published prices for now, so each card links to the quote
+ * form below instead. A price added in lib/packages.ts replaces that link.
  * `.reveal` wraps each card rather than sitting on it so the card's own hover
  * transition isn't overridden by the reveal transition.
  */
@@ -32,10 +32,21 @@ export function PublishingPackages() {
                   {pkg.popular && <div className="package-badge">Most Popular</div>}
                   <h3 className="package-name serif">{pkg.name}</h3>
                   <p className="package-tagline">{pkg.tagline}</p>
-                  <div className={'package-price serif' + (price ? '' : ' is-on-request')}>
-                    {price ?? 'Price on request'}
-                    {price && SITE.taxNote && <span className="package-tax">{SITE.taxNote}</span>}
-                  </div>
+                  {price ? (
+                    <div className="package-price serif">
+                      {price}
+                      {SITE.taxNote && <span className="package-tax">{SITE.taxNote}</span>}
+                    </div>
+                  ) : (
+                    <Link
+                      className="package-price package-price-quote serif"
+                      to="/?scroll=package-quote"
+                      data-cta={'Get a quote: ' + pkg.name}
+                    >
+                      Get a quote <span aria-hidden="true">→</span>
+                      <span className="visually-hidden"> for the {pkg.name} package</span>
+                    </Link>
+                  )}
                   {pkg.includes && <p className="package-includes">{pkg.includes}</p>}
                   <ul className="package-features">
                     {pkg.features.map((feature) => (
@@ -54,7 +65,7 @@ export function PublishingPackages() {
           })}
         </div>
 
-        <div className="package-quote reveal">
+        <div className="package-quote reveal" id="package-quote">
           <QuoteForm
             placement="packages"
             headingLevel="h3"

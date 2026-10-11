@@ -1,7 +1,7 @@
 export interface PublishingPackage {
   name: string;
   tagline: string;
-  /** in the currency set in config/site.ts, e.g. 24999. Shows "Price on request" when omitted. */
+  /** in the currency set in config/site.ts, e.g. 24999. Shows a "Get a quote" link when omitted. */
   price?: number;
   /** shown above the feature list, e.g. "Everything in Essential, plus:" */
   includes?: string;
@@ -9,9 +9,8 @@ export interface PublishingPackage {
   popular?: boolean;
 }
 
-// TODO(real data): add each package's real price as a number (e.g. price: 24999)
-// and set SITE.currency in config/site.ts. Until both are set, the cards show
-// "Price on request" instead of a figure.
+// No prices for now: every card shows "Get a quote" instead. To publish a price
+// later, add it as a number (e.g. price: 24999); it is shown in SITE.currency (INR).
 export const PACKAGES: PublishingPackage[] = [
   {
     name: 'Essential',

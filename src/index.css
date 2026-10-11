@@ -489,7 +489,11 @@ html.menu-open{overflow:hidden}
 .quote .submission-done .submit{background:var(--gold);color:#1c160c}
 .submission-done h3:focus{outline:none}
 .package-quote{margin-top:3.6rem}
-.package-price.is-on-request{font-size:1.6rem;line-height:1.2}
+.package-price-quote{display:block;font-size:1.6rem;line-height:1.2;text-decoration:none;transition:color .3s}
+.package-price-quote span[aria-hidden]{display:inline-block;transition:transform .3s}
+.package-price-quote:hover{color:var(--gold-hi)}.package-price-quote:hover span[aria-hidden]{transform:translateX(4px)}
+.package-price-quote:focus-visible{outline:2px solid var(--gold);outline-offset:4px;border-radius:4px}
+.package-quote{scroll-margin-top:6rem}
 .package-tax{display:block;margin-top:.55rem;font-family:"Inter",sans-serif;font-size:.78rem;font-weight:400;color:var(--muted)}
 
 /* ---------- FORM EXTRAS (honeypot, send failure) ---------- */
